@@ -23,6 +23,12 @@
 (define-constant err-token-not-available (err u102))
 (define-constant err-insufficient-funds (err u103))
 (define-constant err-list-full (err u104))
+(define-constant err-invalid-name (err u105))
+(define-constant err-invalid-description (err u106))
+(define-constant err-invalid-image-uri (err u107))
+(define-constant err-invalid-category (err u108))
+(define-constant err-invalid-size (err u109))
+(define-constant err-invalid-price (err u110))
 
 ;; List a fashion item
 (define-public (list-item 
@@ -32,34 +38,43 @@
   (category (string-utf8 32))
   (size (string-utf8 16))
   (price uint))
-  (let
-    ((token-id (var-get token-id-nonce))
-     (seller tx-sender)
-     (seller-current-tokens (default-to (list) (map-get? seller-tokens seller)))
-     (new-seller-tokens (unwrap! (as-max-len? (append seller-current-tokens token-id) u100) err-list-full)))
+  (begin
+    ;; Validate inputs
+    (asserts! (> (len name) u0) err-invalid-name)
+    (asserts! (> (len description) u0) err-invalid-description)
+    (asserts! (> (len image-uri) u0) err-invalid-image-uri)
+    (asserts! (> (len category) u0) err-invalid-category)
+    (asserts! (> (len size) u0) err-invalid-size)
+    (asserts! (> price u0) err-invalid-price)
     
-    ;; Mint the token
-    (try! (nft-mint? style-token token-id seller))
-    
-    ;; Store the listing
-    (map-set token-listings token-id {
-      seller: seller,
-      name: name,
-      description: description,
-      image-uri: image-uri,
-      category: category,
-      size: size,
-      price: price,
-      available: true
-    })
-    
-    ;; Update seller's token list with length check
-    (map-set seller-tokens seller new-seller-tokens)
-    
-    ;; Increment the token ID counter
-    (var-set token-id-nonce (+ token-id u1))
-    
-    (ok token-id)))
+    (let
+      ((token-id (var-get token-id-nonce))
+       (seller tx-sender)
+       (seller-current-tokens (default-to (list) (map-get? seller-tokens seller)))
+       (new-seller-tokens (unwrap! (as-max-len? (append seller-current-tokens token-id) u100) err-list-full)))
+      
+      ;; Mint the token
+      (try! (nft-mint? style-token token-id seller))
+      
+      ;; Store the listing
+      (map-set token-listings token-id {
+        seller: seller,
+        name: name,
+        description: description,
+        image-uri: image-uri,
+        category: category,
+        size: size,
+        price: price,
+        available: true
+      })
+      
+      ;; Update seller's token list with length check
+      (map-set seller-tokens seller new-seller-tokens)
+      
+      ;; Increment the token ID counter
+      (var-set token-id-nonce (+ token-id u1))
+      
+      (ok token-id))))
 
 ;; Purchase a fashion item
 (define-public (purchase-item (token-id uint))
