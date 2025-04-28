@@ -22,6 +22,7 @@
 (define-constant err-token-not-found (err u101))
 (define-constant err-token-not-available (err u102))
 (define-constant err-insufficient-funds (err u103))
+(define-constant err-list-full (err u104))
 
 ;; List a fashion item
 (define-public (list-item 
@@ -34,7 +35,8 @@
   (let
     ((token-id (var-get token-id-nonce))
      (seller tx-sender)
-     (seller-current-tokens (default-to (list) (map-get? seller-tokens seller))))
+     (seller-current-tokens (default-to (list) (map-get? seller-tokens seller)))
+     (new-seller-tokens (unwrap! (as-max-len? (append seller-current-tokens token-id) u100) err-list-full)))
     
     ;; Mint the token
     (try! (nft-mint? style-token token-id seller))
@@ -51,8 +53,8 @@
       available: true
     })
     
-    ;; Update seller's token list - Fixed: using concat with a list containing the token-id
-    (map-set seller-tokens seller (concat seller-current-tokens (list token-id)))
+    ;; Update seller's token list with length check
+    (map-set seller-tokens seller new-seller-tokens)
     
     ;; Increment the token ID counter
     (var-set token-id-nonce (+ token-id u1))
@@ -67,7 +69,8 @@
      (seller (get seller listing))
      (price (get price listing))
      (available (get available listing))
-     (buyer-current-tokens (default-to (list) (map-get? buyer-tokens buyer))))
+     (buyer-current-tokens (default-to (list) (map-get? buyer-tokens buyer)))
+     (new-buyer-tokens (unwrap! (as-max-len? (append buyer-current-tokens token-id) u100) err-list-full)))
     
     ;; Check if item is available
     (asserts! available err-token-not-available)
@@ -84,8 +87,8 @@
     ;; Update listing availability
     (map-set token-listings token-id (merge listing {available: false}))
     
-    ;; Update buyer's token list - Fixed: using concat with a list containing the token-id
-    (map-set buyer-tokens buyer (concat buyer-current-tokens (list token-id)))
+    ;; Update buyer's token list with length check
+    (map-set buyer-tokens buyer new-buyer-tokens)
     
     (ok true)))
 
