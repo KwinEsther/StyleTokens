@@ -51,8 +51,8 @@
       available: true
     })
     
-    ;; Update seller's token list
-    (map-set seller-tokens seller (append seller-current-tokens token-id))
+    ;; Update seller's token list - Fixed: using concat with a list containing the token-id
+    (map-set seller-tokens seller (concat seller-current-tokens (list token-id)))
     
     ;; Increment the token ID counter
     (var-set token-id-nonce (+ token-id u1))
@@ -84,8 +84,8 @@
     ;; Update listing availability
     (map-set token-listings token-id (merge listing {available: false}))
     
-    ;; Update buyer's token list
-    (map-set buyer-tokens buyer (append buyer-current-tokens token-id))
+    ;; Update buyer's token list - Fixed: using concat with a list containing the token-id
+    (map-set buyer-tokens buyer (concat buyer-current-tokens (list token-id)))
     
     (ok true)))
 
